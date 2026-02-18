@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Missive</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #0b141a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+
+        .phone-frame {
+            width: 375px;
+            height: 700px;
+            background: #0b141a;
+            border-radius: 40px;
+            overflow: hidden;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.5), inset 0 0 0 3px #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .chat-header {
+            background: #1f2c34;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #0b141a;
+            flex-shrink: 0;
+        }
+
+        .back-arrow {
+            color: #00a884;
+            font-size: 20px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 500;
+            font-size: 16px;
+        }
+
+        .contact-info {
+            flex: 1;
+        }
+
+        .contact-name {
+            color: #e9edef;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .contact-status {
+            color: #8696a0;
+            font-size: 12px;
+        }
+
+        .header-icons {
+            display: flex;
+            gap: 20px;
+            color: #aebac1;
+            font-size: 18px;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 16px;
+            padding-bottom: 16px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="p" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="0.5" fill="%23182229" opacity="0.5"/></pattern></defs><rect fill="%230b141a" width="100" height="100"/><rect fill="url(%23p)" width="100" height="100"/></svg>');
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            scroll-behavior: auto;
+        }
+
+        .date-separator {
+            text-align: center;
+            margin: 12px 0;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.4s ease;
+        }
+
+        .date-separator.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .date-separator span {
+            background: #182229;
+            color: #8696a0;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            display: inline-block;
+        }
+
+        .message-row {
+            display: flex;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+
+        .message-row.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .message-row.becca {
+            justify-content: flex-end;
+        }
+
+        .message-row.shannon {
+            justify-content: flex-start;
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 6px 8px;
+            border-radius: 8px;
+            position: relative;
+            margin: 1px 0;
+        }
+
+        .message-row.becca .message {
+            background: #005c4b;
+            border-radius: 8px;
+            border-top-right-radius: 0;
+        }
+
+        .message-row.shannon .message {
+            background: #1f2c34;
+            border-radius: 8px;
+            border-top-left-radius: 0;
+        }
+
+        /* Smooth curved tail for Becca (right/green) */
+        .message-row.becca .message::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -8px;
+            width: 8px;
+            height: 13px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 13"><path d="M0 0v13c0-7 8-7 8-13z" fill="%23005c4b"/></svg>') no-repeat;
+        }
+
+        /* Smooth curved tail for Shannon (left/grey) */
+        .message-row.shannon .message::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -8px;
+            width: 8px;
+            height: 13px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 13"><path d="M8 0v13c0-7-8-7-8-13z" fill="%231f2c34"/></svg>') no-repeat;
+        }
+
+        .message-row.becca + .message-row.becca .message,
+        .message-row.shannon + .message-row.shannon .message {
+            border-radius: 8px;
+        }
+
+        .message-row.becca + .message-row.becca .message::before,
+        .message-row.shannon + .message-row.shannon .message::before {
+            display: none;
+        }
+
+        .message-text {
+            color: #e9edef;
+            font-size: 14px;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: rgba(255,255,255,0.6);
+            float: right;
+            margin-left: 8px;
+            margin-top: 4px;
+        }
+
+        .message-row.becca .message-time::after {
+            content: ' ✓✓';
+            color: #53bdeb;
+        }
+
+        /* Voice message styling */
+        .voice-message {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 200px;
+        }
+
+        .voice-play-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #00a884;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .voice-play-btn:hover {
+            background: #00c49a;
+        }
+
+        .voice-play-btn::after {
+            content: '';
+            border: 6px solid transparent;
+            border-left: 10px solid white;
+            margin-left: 4px;
+        }
+
+        .voice-play-btn.playing::after {
+            border: none;
+            width: 10px;
+            height: 12px;
+            background: linear-gradient(to right, white 0%, white 35%, transparent 35%, transparent 65%, white 65%, white 100%);
+            margin-left: 0;
+        }
+
+        .voice-waveform {
+            flex: 1;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .voice-bar {
+            width: 3px;
+            background: #8696a0;
+            border-radius: 2px;
+            transition: background 0.1s ease;
+        }
+
+        .voice-bar.active {
+            background: #00a884;
+        }
+
+        .voice-duration {
+            font-size: 11px;
+            color: #8696a0;
+            white-space: nowrap;
+        }
+
+        .voice-text {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-style: italic;
+            color: #8696a0;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        /* Typing indicator */
+        .typing-indicator {
+            display: none;
+            padding: 8px 0;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .typing-indicator.visible {
+            display: flex;
+            opacity: 1;
+        }
+
+        .typing-bubble {
+            background: #1f2c34;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-top-left-radius: 0;
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #8696a0;
+            border-radius: 50%;
+            animation: typing 1.4s ease-in-out infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-8px); }
+        }
+
+        /* Controls */
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            z-index: 100;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 500px;
+        }
+
+        .control-btn {
+            background: #00a884;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .control-btn:hover {
+            background: #00c49a;
+            transform: scale(1.05);
+        }
+
+        .control-btn:disabled {
+            background: #2a3942;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #8696a0;
+            font-size: 14px;
+        }
+
+        .speed-control select {
+            background: #1f2c34;
+            color: #e9edef;
+            border: 1px solid #2a3942;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* Scrollbar styling */
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb {
+            background: #2a3942;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="chat-header">
+            <span class="back-arrow">←</span>
+            <div class="avatar">S</div>
+            <div class="contact-info">
+                <div class="contact-name">Shannon</div>
+                <div class="contact-status">online</div>
+            </div>
+            <div class="header-icons">
+                <span>📹</span>
+                <span>📞</span>
+                <span>⋮</span>
+            </div>
+        </div>
+        <div class="chat-container" id="chat">
+            <div class="typing-indicator" id="typing">
+                <div class="typing-bubble">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="control-btn" id="playBtn" onclick="startPlayback()">▶ Play</button>
+        <button class="control-btn" id="pauseBtn" onclick="pausePlayback()" disabled>⏸ Pause</button>
+        <button class="control-btn" id="resetBtn" onclick="resetPlayback()">↺ Reset</button>
+        <div class="speed-control">
+            <label>Speed:</label>
+            <select id="speed" onchange="updateSpeed()">
+                <option value="2500">Slow</option>
+                <option value="1600" selected>Normal</option>
+                <option value="900">Fast</option>
+                <option value="450">Very Fast</option>
+            </select>
+        </div>
+    </div>
+
+    <script>
+        // Text-to-speech setup
+        let shannonVoice = null;
+        let currentUtterance = null;
+        
+        function initVoices() {
+            const voices = speechSynthesis.getVoices();
+            // Try to find a good female UK voice
+            const preferredVoices = [
+                'Google UK English Female',
+                'Microsoft Hazel - English (United Kingdom)',
+                'Karen',
+                'Moira',
+                'Samantha',
+                'Google US English Female',
+            ];
+            
+            for (const preferred of preferredVoices) {
+                const found = voices.find(v => v.name.includes(preferred) || v.name === preferred);
+                if (found) {
+                    shannonVoice = found;
+                    console.log('Selected voice:', shannonVoice.name);
+                    break;
+                }
+            }
+            
+            // Fallback to any female-sounding voice
+            if (!shannonVoice) {
+                shannonVoice = voices.find(v => 
+                    v.lang.startsWith('en') && 
+                    (v.name.toLowerCase().includes('female') || 
+                     v.name.includes('Samantha') || 
+                     v.name.includes('Karen') ||
+                     v.name.includes('Victoria'))
+                ) || voices.find(v => v.lang.startsWith('en')) || voices[0];
+                console.log('Fallback voice:', shannonVoice?.name);
+            }
+        }
+        
+        // Initialize voices
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = initVoices;
+        }
+        initVoices();
+        
+        function speakText(text, onEnd) {
+            // Cancel any ongoing speech
+            speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.voice = shannonVoice;
+            utterance.rate = 0.95;
+            utterance.pitch = 1.1;
+            
+            utterance.onend = () => {
+                currentUtterance = null;
+                if (onEnd) onEnd();
+            };
+            
+            utterance.onerror = () => {
+                currentUtterance = null;
+                if (onEnd) onEnd();
+            };
+            
+            currentUtterance = utterance;
+            speechSynthesis.speak(utterance);
+            
+            return utterance;
+        }
+        
+        function stopSpeech() {
+            speechSynthesis.cancel();
+            currentUtterance = null;
+        }
+
+        // Becca's messages are green (right side) - she has Mona, Quinn, the "real job"
+        // Shannon's messages are grey (left side) - she's the dancer, teaches ballet
+        // Becca messages around 7am, Shannon responds around 10-11am
+        
+        const messages = [
+            // June 29
+            { type: 'date', text: 'June 29' },
+            { type: 'becca', text: 'Hey, got any plans for the holidays?', time: '7:12 AM' },
+            { type: 'shannon', text: 'Morning Becca what holidays?', time: '10:47 AM' },
+            { type: 'becca', text: 'December', time: '10:48 AM' },
+            { type: 'shannon', text: 'December is in 6 months 😂😂', time: '10:48 AM' },
+            { type: 'becca', text: "Mona's parents are away so we thought we'd go to mum's", time: '10:52 AM' },
+            { type: 'shannon', text: '👍', time: '11:03 AM' },
+
+            // September 27
+            { type: 'date', text: 'September 27' },
+            { type: 'becca', text: "So, Quinn's last day is the 20th, we thought we'd pick her up and go, what do you say?", time: '7:15 AM' },
+            { type: 'shannon', text: 'Sounds like a plan', time: '10:22 AM' },
+            { type: 'becca', text: 'Fab, can you meet us at 1pm at the Trading House?', time: '10:23 AM' },
+            { type: 'shannon', text: '?', time: '10:24 AM' },
+            { type: 'becca', text: "We'll grab lunch, then head to pick Quinn up from school. We'll park the car there so you can come with your stuff.", time: '10:25 AM' },
+            { type: 'shannon', text: "Oh, you mean drive to mum's?", time: '10:26 AM' },
+            { type: 'becca', text: 'Yeah', time: '10:26 AM' },
+            { type: 'becca', text: 'Did you plan to take the train?', time: '10:27 AM' },
+            { type: 'shannon', text: 'Yeah, I have a thing on the 20th anyway', time: '10:28 AM' },
+            { type: 'becca', text: 'What thing?', time: '10:28 AM' },
+            { type: 'voice', sender: 'shannon', duration: '0:47', time: '10:31 AM', 
+              transcript: "Yeah, so, you know I teach primary and grade one ballet, I just started a couple of weeks ago and I had to take over the class from someone who really wasn't doing that great a job. Anyways, the lady who runs the dance school, her name is Nina, and she's pretty, let's say, tightly wound? And she wants them to take their exams in December anyway. They're barely ready but I gotta get them there anyway. The point is, their exam is on the 20th so I'll be kinda busy right up until then and I have to be there for their exam and god knows how long that'll take. So maybe it's best if I just took the train maybe on the weekend even so I won't be in your space, you know?" },
+            { type: 'becca', text: "Yeah, OK, that makes sense. I'll come pick you up from the station if you want.", time: '10:35 AM' },
+            { type: 'shannon', text: "Yeah, that'll be nice.", time: '10:36 AM' },
+
+            // October 3
+            { type: 'date', text: 'October 3' },
+            { type: 'becca', text: "Hey, so, I talked to Mona and she thinks we should go on the Friday and she said we should all take the train.", time: '7:42 AM' },
+            { type: 'shannon', text: 'Really?', time: '10:45 AM' },
+            { type: 'shannon', text: "I mean, ok, if that's what you guys wanna do, sure 🙂", time: '10:45 AM' },
+            { type: 'becca', text: "Yeah, Quinn gets car sick and she's a bit better on the train. Mona thinks it'll be less stressful for everyone.", time: '10:47 AM' },
+            { type: 'shannon', text: "Haha, you stressed, like that's a thing", time: '10:48 AM' },
+            { type: 'shannon', text: 'Anyways, sure, that sounds like fun. Road trip!', time: '10:48 AM' },
+
+            // October 15 - Shannon's birthday
+            { type: 'date', text: 'October 15' },
+            { type: 'shannon', text: 'Oh my god thanks for the cupcakes! 💕', time: '11:23 AM' },
+            { type: 'becca', text: 'Happy Birthday!', time: '11:25 AM' },
+            { type: 'shannon', text: 'These are fancy! Thanks so much!', time: '11:26 AM' },
+            { type: 'becca', text: "Mona found this shop that delivers. We've never tried them ourselves. Are they any good?", time: '11:28 AM' },
+            { type: 'shannon', text: 'Absolutely delicious! 🧁', time: '11:29 AM' },
+            { type: 'becca', text: "There's a cupcake emoji?", time: '11:29 AM' },
+            { type: 'shannon', text: "There's an emoji for everything now 😂", time: '11:30 AM' },
+            { type: 'becca', text: 'Clearly.', time: '11:30 AM' },
+            { type: 'shannon', text: "I definitely shouldn't have tried these so early I'm gonna eat all of them now!", time: '11:32 AM' },
+            { type: 'becca', text: 'It is your birthday…', time: '11:33 AM' },
+            { type: 'shannon', text: 'Yeah but I still need to dance', time: '11:34 AM' },
+            { type: 'becca', text: '?', time: '11:34 AM' },
+            { type: 'shannon', text: "Can't have too much extra 😟", time: '11:35 AM' },
+            { type: 'becca', text: "I'm sure you'll be fine.", time: '11:36 AM' },
+            { type: 'shannon', text: "Oh well, I'll stay an extra hour at the gym tomorrow 🏋💪", time: '11:37 AM' },
+            { type: 'becca', text: 'Sounds a bit like an eating disorder', time: '11:38 AM' },
+            { type: 'shannon', text: '😅😳', time: '11:39 AM' },
+
+            // October 20 - Jamie revelation
+            { type: 'date', text: 'October 20' },
+            { type: 'shannon', text: "Sorry I forgot about your birthday this year, it's just been a bit crazy", time: '3:15 PM' },
+            { type: 'becca', text: "That's ok.", time: '3:22 PM' },
+            { type: 'shannon', text: "No, really, I feel like I haven't been a great sister lately", time: '3:23 PM' },
+            { type: 'becca', text: "Don't worry about it.", time: '3:25 PM' },
+            { type: 'shannon', text: "It's just that with this new job and figuring out what I want with Jamie and everything", time: '3:26 PM' },
+            { type: 'becca', text: '?', time: '3:26 PM' },
+            { type: 'becca', text: "Who's Jamie?", time: '3:27 PM' },
+            { type: 'shannon', text: 'I told you about Jamie', time: '3:27 PM' },
+            { type: 'becca', text: "No you didn't", time: '3:28 PM' },
+            { type: 'shannon', text: "We're kind of seeing each other. He wants us to move in together but I don't feel I'm ready", time: '3:29 PM' },
+            { type: 'becca', text: 'What? You have a boyfriend?', time: '3:30 PM' },
+            { type: 'shannon', text: 'Ugh Becs boyfriend is a word mum would use', time: '3:30 PM' },
+            { type: 'shannon', text: "DON'T tell mum", time: '3:31 PM' },
+            { type: 'becca', text: 'That she would say boyfriend?', time: '3:31 PM' },
+            { type: 'shannon', text: 'No, about Jamie', time: '3:32 PM' },
+            { type: 'becca', text: "Mum doesn't know?", time: '3:32 PM' },
+            { type: 'shannon', text: "No, and I'd like it to stay that way please", time: '3:33 PM' },
+            { type: 'becca', text: 'OK. Why?', time: '3:34 PM' },
+            { type: 'shannon', text: 'Because', time: '3:35 PM' },
+            { type: 'shannon', text: "Look, I don't even know what's going to happen. We're not that compatible I don't think", time: '3:36 PM' },
+            { type: 'becca', text: 'Then why are you seeing him?', time: '3:37 PM' },
+            { type: 'voice', sender: 'shannon', duration: '0:38', time: '3:40 PM',
+              transcript: "Ugh, I don't know, ok? I don't know why I'm seeing him. A friend set us up, you remember Katie? Anyway, Katie set us up and now if I break up with him it's going to be weird with Katie and she's kind of the only friend I have left from high school. Anyway, I know I need to break up with him but I just need a bit of time to figure it out. Please don't tell mum about it, she's going to want to meet him and I'm not bringing him over for Christmas." },
+            { type: 'becca', text: 'My lips are sealed.', time: '3:42 PM' },
+            { type: 'becca', text: 'How is Katie, by the way?', time: '3:43 PM' },
+            { type: 'shannon', text: 'Pregnant', time: '3:44 PM' },
+            { type: 'becca', text: 'NO', time: '3:44 PM' },
+            { type: 'shannon', text: "Yeah, and we can't hear the end of it", time: '3:45 PM' },
+            { type: 'becca', text: 'What does that mean?', time: '3:46 PM' },
+            { type: 'shannon', text: 'You know Katie', time: '3:46 PM' },
+            { type: 'becca', text: "I feel like that's a story for when we get together for coffee.", time: '3:48 PM' },
+            { type: 'shannon', text: 'Totally', time: '3:49 PM' },
+            { type: 'becca', text: "And not that I mind, I obviously don't, but my birthday was in April and you started the new job in September. Just saying.", time: '3:51 PM' },
+            { type: 'shannon', text: 'I know. I suck', time: '3:52 PM' },
+            { type: 'shannon', text: "I remembered it on the day, and I meant to call but things got a bit out of hand with Jamie that day", time: '3:53 PM' },
+            { type: 'becca', text: 'Out of hand how?', time: '3:54 PM' },
+            { type: 'shannon', text: "Nothing crazy, but it was a whole drama you know how it is", time: '3:55 PM' },
+            { type: 'becca', text: "I don't, actually.", time: '3:56 PM' },
+            { type: 'shannon', text: 'Right', time: '3:57 PM' },
+            { type: 'shannon', text: "But really, you and Mona don't have spats?", time: '3:58 PM' },
+            { type: 'becca', text: "Spats, not dramas. If I can't do my job because of something Mona says that doesn't help anyone, does it?", time: '3:59 PM' },
+
+            // November 20
+            { type: 'date', text: 'November 20' },
+            { type: 'becca', text: 'Say, what are you getting mum this year?', time: '6:30 AM' },
+            { type: 'shannon', text: "We're supposed to get her stuff?", time: '10:45 AM' },
+            { type: 'becca', text: "I don't know about supposed, I usually send something.", time: '10:47 AM' },
+            { type: 'shannon', text: '🤷', time: '10:48 AM' },
+            { type: 'becca', text: 'What does that mean?', time: '10:49 AM' },
+            { type: 'shannon', text: "I don't think I got mum a Christmas present since I moved down here", time: '10:50 AM' },
+            { type: 'becca', text: 'Oh. Ok.', time: '10:52 AM' },
+            { type: 'shannon', text: "Yeah, I know. But you're the perfect daughter, it's your job haha", time: '10:53 AM' },
+            { type: 'becca', text: 'How am I the perfect daughter?', time: '10:54 AM' },
+            { type: 'voice', sender: 'shannon', duration: '0:22', time: '10:57 AM',
+              transcript: "Come on, Becs, you know what I mean. You're the perfect daughter, you're the one with a real job and a real family, you're the one who calls her every week. I don't even get along with her. Every time I call her we fight because she tells me how perfect you are." },
+            { type: 'becca', text: "Interesting. When I talk to her she always tells me about your latest show or dance you've put up on Instagram.", time: '11:00 AM' },
+            { type: 'shannon', text: 'She never says a word to me', time: '11:01 AM' },
+            { type: 'shannon', text: "I didn't even know she watched them", time: '11:01 AM' },
+            { type: 'becca', text: 'Do you put one up every week?', time: '11:02 AM' },
+            { type: 'shannon', text: "Every Wednesday. It's my midweek inspiration", time: '11:03 AM' },
+            { type: 'becca', text: 'What does that mean, midweek inspiration?', time: '11:04 AM' },
+            { type: 'voice', sender: 'shannon', duration: '0:31', time: '11:08 AM',
+              transcript: "OK, so you know how Wednesdays are tough, right? Obviously not for you, but for normal people Wednesdays are tough. Anyway, it helps me to post a little dance every week on Wednesday, it kinda forces me to do something which I wouldn't do otherwise and it helps getting me in the groove, helps me get over the hump, you know?" },
+            { type: 'becca', text: 'Sounds fun, maybe I should watch it.', time: '11:10 AM' },
+            { type: 'shannon', text: 'You totally can 😊', time: '11:11 AM' },
+
+            // November 22
+            { type: 'date', text: 'November 22' },
+            { type: 'becca', text: "How can I watch your dance? Sorry I tried but I just can't figure it out.", time: '7:15 AM' },
+            { type: 'shannon', text: 'No worries, do you have the app?', time: '10:18 AM' },
+            { type: 'becca', text: "No, I've created an account on my laptop.", time: '10:19 AM' },
+            { type: 'shannon', text: "Oh, no, it's much better on the app", time: '10:20 AM' },
+            { type: 'becca', text: 'OK, so download the Instagram app?', time: '10:21 AM' },
+            { type: 'shannon', text: 'Yes', time: '10:21 AM' },
+            { type: 'shannon', text: 'Did you decide what to get mum?', time: '10:23 AM' },
+            { type: 'becca', text: "Not yet, probably pick something up at Neil's at some point.", time: '10:25 AM' },
+            { type: 'shannon', text: "OK. That's what she likes? I don't even know what mum likes. I'm such a rubbish daughter", time: '10:27 AM' },
+            { type: 'becca', text: "You're not a rubbish anything.", time: '10:28 AM' },
+            { type: 'becca', text: 'OK, I have the app. Now what?', time: '10:32 AM' },
+            { type: 'shannon', text: 'Tap search and put in Shannon dance. That should work', time: '10:33 AM' },
+            { type: 'becca', text: 'Oh, yeah! There you are.', time: '10:35 AM' },
+            { type: 'becca', text: 'Wow, Shannon, that is beautiful.', time: '10:45 AM' },
+            { type: 'shannon', text: 'Thanks 🥰', time: '10:46 AM' },
+            { type: 'becca', text: "As for what mum likes, she's never thrilled about the care packages I get her so maybe that's not the way to go.", time: '10:48 AM' },
+            { type: 'shannon', text: 'Then why do you keep getting them?', time: '10:49 AM' },
+            { type: 'becca', text: "Because I don't know what else to get her? Anyway it's now kind of a thing I guess.", time: '10:51 AM' },
+            { type: 'shannon', text: 'Did you ask her?', time: '10:52 AM' },
+            { type: 'becca', text: "Ask her what? Hey mum do you like my gifts? That's not something you ask, Shannon.", time: '10:53 AM' },
+            { type: 'shannon', text: "No, silly, ask her what she'd like for Christmas", time: '10:54 AM' },
+            { type: 'becca', text: "She'll say something like having Quinn spend the week there. Something unuseful.", time: '10:56 AM' },
+            { type: 'voice', sender: 'shannon', duration: '0:35', time: '11:00 AM',
+              transcript: "First of all, Becs, not everything has to be useful. Second, having Quinn is such an amazing gift to mum, I don't know why you don't go there more often. And, I think she was saying something about how the house needs a new coat of paint. How about we both get her that together?" },
+            { type: 'becca', text: "Amazing idea. I found a few painters in Doncaster willing to go over and paint the whole house. What's your budget?", time: '11:06 AM' },
+            { type: 'voice', sender: 'shannon', duration: '0:42', time: '11:11 AM',
+              transcript: "Hey, so, I don't have money to get a painter. I was thinking more that we can get the paint and brushes and then paint the house over the holidays when we're there. I bet Mona could help with picking out the colours, and if she has any tips for us that would be great. I thought mum could take Quinn out or keep her busy and then we can paint, or maybe we can all five of us paint together. Like a fun project, you know?" },
+            { type: 'becca', text: 'Oh.', time: '11:13 AM' },
+            { type: 'becca', text: "OK, yeah, that sounds like fun. How about I'll get Mona to pick the paint and you can get brushes or something?", time: '11:15 AM' },
+            { type: 'shannon', text: "Sounds good, tell her if she needs any special equipment to send me a picture or name and I'll find it", time: '11:16 AM' },
+            { type: 'becca', text: 'What special equipment?', time: '11:17 AM' },
+
+            // November 24
+            { type: 'date', text: 'November 24' },
+            { type: 'becca', text: 'By the way, you have a new fan.', time: '7:15 AM' },
+            { type: 'shannon', text: '?', time: '10:18 AM' },
+            { type: 'becca', text: "We showed your video to Quinn and she absolutely loved it. She's been trying to dance like aunty Shannon all week.", time: '10:19 AM' },
+            { type: 'shannon', text: 'OMG so cute! We should hang out more and dance together! 💃', time: '10:21 AM' },
+            { type: 'becca', text: "I'm not much of a dancer, you know that.", time: '10:22 AM' },
+            { type: 'shannon', text: 'You can be if you want to. You can do anything you put your mind to', time: '10:23 AM' },
+            { type: 'becca', text: 'Sure.', time: '10:24 AM' },
+            { type: 'becca', text: 'Anyway, Quinn loved your video. And I told Mum and she loved it too.', time: '10:25 AM' },
+            { type: 'shannon', text: '😍😊😚', time: '10:26 AM' },
+
+            // November 29
+            { type: 'date', text: 'November 29' },
+            { type: 'becca', text: 'Mona says get the "Stanley 10" and she\'ll bring some of her brushes as well. Also do we want stencils?', time: '7:30 AM' },
+            { type: 'shannon', text: "I don't know, maybe mum's too old for stencils? Maybe we should ask her?", time: '10:45 AM' },
+            { type: 'becca', text: "Hey, you're the one with the bright ideas.", time: '10:47 AM' },
+            { type: 'shannon', text: "OK, I'll try and feel the way. I'll find some stuff on Pinterest and send mum and see what she thinks", time: '10:48 AM' },
+
+            // December 2
+            { type: 'date', text: 'December 2' },
+            { type: 'shannon', text: "She loves it, btw. I found a stencil that she connected to, I'll get it this week", time: '4:15 PM' },
+            { type: 'becca', text: "Good. I think Mona is going a bit crazy with the paint. She picked 14 different colours. It feels like a lot to me but she's the artist, what can I say?", time: '4:22 PM' },
+            { type: 'shannon', text: "Oh wow, I'm glad you're the ones paying for the paint haha", time: '4:24 PM' },
+
+            // December 3
+            { type: 'date', text: 'December 3' },
+            { type: 'shannon', text: 'Hey, you mad at me or something?', time: '9:15 PM' },
+            { type: 'becca', text: 'No, why?', time: '9:28 PM' },
+            { type: 'shannon', text: '🤷', time: '9:29 PM' },
+            { type: 'becca', text: 'Why would I be mad?', time: '9:30 PM' },
+            { type: 'becca', text: "What have you done?", time: '9:31 PM' },
+
+            // December 5
+            { type: 'date', text: 'December 5' },
+            { type: 'shannon', text: "I didn't do anything, just had a feeling you were mad. Nevermind", time: '11:30 AM' },
+            { type: 'becca', text: 'OK...', time: '11:45 AM' },
+
+            // December 17
+            { type: 'date', text: 'December 17' },
+            { type: 'shannon', text: 'Do we need rollers?', time: '3:15 PM' },
+            { type: 'shannon', text: 'I feel like we also need rollers', time: '3:16 PM' },
+
+            // December 18
+            { type: 'date', text: 'December 18' },
+            { type: 'becca', text: 'Mona says definitely yes for the rollers. You have the brushes and the stencil?', time: '7:30 AM' },
+            { type: 'shannon', text: "Not yet, it's been crazy busy", time: '11:15 AM' },
+            { type: 'becca', text: "Shannon, we're leaving for Mum's at the end of the week.", time: '11:17 AM' },
+
+            // December 19
+            { type: 'date', text: 'December 19' },
+            { type: 'becca', text: 'Shannon?', time: '7:30 PM' },
+
+            // December 20
+            { type: 'date', text: 'December 20' },
+            { type: 'becca', text: "Look, you're being silly. I didn't mean to tell you what to do, I'm just stressed at work ok?", time: '7:15 AM' },
+            { type: 'becca', text: 'Shannon?', time: '7:45 AM' },
+            { type: 'becca', text: "Fine, be like that. You act like a little girl and then you wonder why no one treats you like an adult. Well, that's why, Shannon. Because you're not taking responsibility. Because you're not acting like an adult.", time: '7:55 AM' },
+            { type: 'becca', text: "I just want everything to be ready. I can't get to Friday and then go start looking for brushes with you before our 10am train.", time: '7:57 AM' },
+            { type: 'becca', text: 'Which reminds me, I have the tickets. You better be on time.', time: '7:58 AM' },
+            { type: 'becca', text: "Shannon, look, I'm sorry. And also, I'm worried. Are you ok?", time: '9:30 PM' },
+            { type: 'voice', sender: 'shannon', duration: '0:52', time: '11:45 PM',
+              transcript: "Hey, sorry I was MIA, the girls needed lots more practise before the exam and Nina was on me like superglue. I literally had my phone on do not disturb all week because she went ballistic on Monday when it dinged on the staff meeting. Don't ask. Well, they're done now so thank God that's behind us. Anyway, I was thinking, any way we can push that 10am train to later in the day? Maybe even Saturday? I know mum is waiting and all but I still haven't got the brushes or rollers and I won't make it before 10am. I'm barely awake now, I'll need a good night sleep. Did you get the flex tickets? I hope you did. Anyway, I'm off to bed I can't keep my eyes open anymore. Talk tomorrow! Byee." },
+
+            // December 21
+            { type: 'date', text: 'December 21' },
+            { type: 'becca', text: 'The tickets I have are not flex.', time: '7:15 AM' },
+            { type: 'becca', text: "We're going on the 10am train.", time: '7:16 AM' },
+            { type: 'shannon', text: 'Sorry', time: '12:00 PM' },
+            { type: 'becca', text: 'You owe me 47 pounds.', time: '12:02 PM' },
+            { type: 'shannon', text: 'Are you on the train?', time: '12:15 PM' },
+            { type: 'becca', text: "Yes, we're on the fucking train.", time: '12:18 PM' },
+            { type: 'shannon', text: "Sorry. I'll come tomorrow, ok?", time: '12:20 PM' },
+            { type: 'shannon', text: "Tell mum I'm sorry", time: '12:21 PM' },
+        ];
+
+        let currentIndex = 0;
+        let isPlaying = false;
+        let playbackTimeout = null;
+        let baseDelay = 1600;
+
+        function generateWaveformBars() {
+            let bars = '';
+            for (let i = 0; i < 25; i++) {
+                const height = Math.random() * 12 + 4;
+                bars += `<div class="voice-bar" style="height: ${height}px" data-index="${i}"></div>`;
+            }
+            return bars;
+        }
+
+        function createMessageElement(msg, index) {
+            if (msg.type === 'date') {
+                const div = document.createElement('div');
+                div.className = 'date-separator';
+                div.innerHTML = `<span>${msg.text}</span>`;
+                return div;
+            }
+
+            if (msg.type === 'voice') {
+                const row = document.createElement('div');
+                row.className = `message-row ${msg.sender}`;
+                row.innerHTML = `
+                    <div class="message">
+                        <div class="voice-message">
+                            <div class="voice-play-btn" data-msg-index="${index}"></div>
+                            <div class="voice-waveform">${generateWaveformBars()}</div>
+                            <span class="voice-duration">${msg.duration}</span>
+                        </div>
+                        <div class="voice-text">${msg.transcript}</div>
+                        <span class="message-time">${msg.time}</span>
+                    </div>
+                `;
+                return row;
+            }
+
+            const row = document.createElement('div');
+            row.className = `message-row ${msg.type}`;
+            row.innerHTML = `
+                <div class="message">
+                    <span class="message-text">${msg.text}</span>
+                    <span class="message-time">${msg.time}</span>
+                </div>
+            `;
+            return row;
+        }
+
+        function showTypingIndicator() {
+            const typing = document.getElementById('typing');
+            const chat = document.getElementById('chat');
+            // Move typing indicator to end of chat
+            chat.appendChild(typing);
+            typing.classList.add('visible');
+            // Scroll to show typing indicator
+            setTimeout(smoothScrollToBottom, 50);
+        }
+
+        function hideTypingIndicator() {
+            document.getElementById('typing').classList.remove('visible');
+        }
+
+        function smoothScrollToBottom() {
+            const chat = document.getElementById('chat');
+            const targetScroll = chat.scrollHeight - chat.clientHeight;
+            const currentScroll = chat.scrollTop;
+            const distance = targetScroll - currentScroll;
+            
+            if (distance <= 0) return;
+            
+            const duration = 300;
+            const startTime = performance.now();
+            
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Ease out cubic
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                
+                chat.scrollTop = currentScroll + (distance * easeOut);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+            
+            requestAnimationFrame(animate);
+        }
+
+        function calculateDelay(msg) {
+            let delay = baseDelay;
+            
+            if (msg.type === 'date') {
+                return baseDelay * 0.6;
+            }
+            
+            if (msg.type === 'voice') {
+                // Voice messages are handled separately with their own delay
+                const words = msg.transcript.split(' ').length;
+                return baseDelay * 2.5 + (words * 30);
+            }
+            
+            // Calculate based on text length
+            const text = msg.text || '';
+            const length = text.length;
+            
+            if (length > 100) {
+                delay = baseDelay * 1.8;
+            } else if (length > 50) {
+                delay = baseDelay * 1.4;
+            } else if (length < 10) {
+                delay = baseDelay * 0.7;
+            }
+            
+            return delay;
+        }
+
+        function animateWaveform(element, duration) {
+            const bars = element.querySelectorAll('.voice-bar');
+            const interval = 100;
+            let elapsed = 0;
+            
+            const animation = setInterval(() => {
+                elapsed += interval;
+                const progress = elapsed / (duration * 1000);
+                
+                bars.forEach((bar, i) => {
+                    if (i / bars.length < progress) {
+                        bar.classList.add('active');
+                    }
+                });
+                
+                if (elapsed >= duration * 1000) {
+                    clearInterval(animation);
+                }
+            }, interval);
+            
+            return animation;
+        }
+
+        function showNextMessage() {
+            if (currentIndex >= messages.length) {
+                pausePlayback();
+                return;
+            }
+
+            hideTypingIndicator();
+
+            const msg = messages[currentIndex];
+            const element = createMessageElement(msg, currentIndex);
+            const chat = document.getElementById('chat');
+            chat.appendChild(element);
+
+            // Small delay before animation starts
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    element.classList.add('visible');
+                    smoothScrollToBottom();
+                });
+            });
+
+            currentIndex++;
+
+            // Handle voice messages - pause for reading time, don't autoplay audio
+            if (msg.type === 'voice') {
+                // Calculate pause based on transcript length (time to read it)
+                const words = msg.transcript.split(' ').length;
+                const readingDelay = baseDelay * 4 + (words * 80); // Very generous reading time
+                
+                // Show typing indicator for next Shannon message after reading pause
+                if (currentIndex < messages.length) {
+                    const nextMsg = messages[currentIndex];
+                    const isShannon = nextMsg.type === 'shannon' || (nextMsg.type === 'voice' && nextMsg.sender === 'shannon');
+                    if (isShannon) {
+                        setTimeout(showTypingIndicator, readingDelay * 0.7);
+                    }
+                }
+                
+                if (isPlaying && currentIndex < messages.length) {
+                    playbackTimeout = setTimeout(showNextMessage, readingDelay);
+                }
+                return;
+            }
+
+            // Calculate delay for this message (time to read it)
+            const readDelay = calculateDelay(msg);
+
+            // Show typing indicator for next Shannon message
+            if (currentIndex < messages.length) {
+                const nextMsg = messages[currentIndex];
+                const isShannon = nextMsg.type === 'shannon' || (nextMsg.type === 'voice' && nextMsg.sender === 'shannon');
+                if (isShannon) {
+                    setTimeout(showTypingIndicator, readDelay * 0.6);
+                }
+            }
+
+            if (isPlaying && currentIndex < messages.length) {
+                playbackTimeout = setTimeout(showNextMessage, readDelay);
+            }
+        }
+
+        function startPlayback() {
+            if (currentIndex >= messages.length) {
+                resetPlayback();
+            }
+            isPlaying = true;
+            document.getElementById('playBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = false;
+            showNextMessage();
+        }
+
+        function pausePlayback() {
+            isPlaying = false;
+            clearTimeout(playbackTimeout);
+            hideTypingIndicator();
+            stopSpeech();
+            document.getElementById('playBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+        }
+
+        function resetPlayback() {
+            pausePlayback();
+            currentIndex = 0;
+            const chat = document.getElementById('chat');
+            const typing = document.getElementById('typing');
+            // Clear chat but keep typing indicator
+            chat.innerHTML = '';
+            chat.appendChild(typing);
+            document.getElementById('playBtn').disabled = false;
+        }
+
+        function updateSpeed() {
+            baseDelay = parseInt(document.getElementById('speed').value);
+        }
+
+        // Allow clicking on voice message play buttons anytime
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('voice-play-btn')) {
+                const msgIndex = parseInt(e.target.dataset.msgIndex);
+                const msg = messages[msgIndex];
+                if (msg && msg.type === 'voice') {
+                    const playBtn = e.target;
+                    const waveform = playBtn.closest('.voice-message').querySelector('.voice-waveform');
+                    
+                    // Stop any current speech
+                    stopSpeech();
+                    
+                    // Reset all play buttons and waveforms
+                    document.querySelectorAll('.voice-play-btn.playing').forEach(btn => btn.classList.remove('playing'));
+                    
+                    // Reset this waveform
+                    waveform.querySelectorAll('.voice-bar').forEach(bar => bar.classList.remove('active'));
+                    
+                    playBtn.classList.add('playing');
+                    
+                    const words = msg.transcript.split(' ').length;
+                    const estimatedDuration = (words / 150) * 60;
+                    animateWaveform(waveform, estimatedDuration);
+                    
+                    speakText(msg.transcript, () => {
+                        playBtn.classList.remove('playing');
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
